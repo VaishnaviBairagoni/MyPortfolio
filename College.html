@@ -1,0 +1,468 @@
+<!doctype html>
+<!--
+CollegeFest - Single-file deployable website
+Files: index.html (this file)
+Usage: Save as index.html, push to a Git repo, enable GitHub Pages (or any static host).
+
+Features:
+- Responsive single-page layout (Hero, Events, Schedule, Speakers, Gallery, Tickets, Sponsors, Contact)
+- Pure HTML, modern CSS (flex/grid), and vanilla JavaScript (no build tools)
+- Tickets modal with simple form saved to localStorage (mock 'booking')
+- Contact form validation (no backend) and a downloadable CSV exporter for bookings
+- SEO meta tags and Open Graph tags
+
+How to deploy to GitHub Pages:
+1. Create a new public repo on GitHub and add this index.html to its root.
+2. Commit & push.
+3. In repo settings -> Pages, choose branch 'main' (or 'gh-pages') and folder '/ (root)'. Save.
+4. GitHub will provide a URL like https://<your-username>.github.io/<repo-name>
+
+Customize: replace images, texts, dates, and sponsor logos. If you want a multi-file setup (assets, css, js separate) I can split it.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VibranceFest — College Fest</title>
+  <meta name="description" content="VibranceFest: 3 days of culture, tech, music and competitions. Workshops, bands, and prizes." />
+  <meta property="og:title" content="VibranceFest — College Fest" />
+  <meta property="og:description" content="3 days of culture, tech, music and competitions. Workshops, bands, and prizes." />
+  <meta property="og:image" content="https://images.unsplash.com/photo-1518600506278-4e8ef466b810?w=1200&q=80" />
+  <meta name="theme-color" content="#ff6b6b" />
+  <style>
+    :root{
+      --accent:#ff6b6b; --muted:#6b7280; --bg:#f8fafc; --card:#ffffff; --glass: rgba(255,255,255,0.6);
+      --max-w:1100px; --radius:14px; --shadow: 0 6px 18px rgba(15,23,42,0.08);
+      --mono: 'Helvetica Neue', Inter, Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{font-family:var(--mono); margin:0; background:linear-gradient(180deg,var(--bg),#fff); color:#0f172a; -webkit-font-smoothing:antialiased}
+    .container{max-width:var(--max-w); margin:0 auto; padding:28px}
+
+    /* NAV */
+    header.nav{display:flex;align-items:center;justify-content:space-between;padding:12px 0}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#ffa94d);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;box-shadow:var(--shadow)}
+    nav ul{display:flex;gap:18px;list-style:none;margin:0;padding:0}
+    nav a{color:var(--muted);text-decoration:none;font-weight:600}
+    nav a:hover{color:var(--accent)}
+    .cta{background:var(--accent);color:white;padding:10px 14px;border-radius:10px;font-weight:700;border:none}
+
+    /* HERO */
+    .hero{display:grid;grid-template-columns:1fr;gap:20px;align-items:center;padding:36px 0}
+    .hero-grid{display:grid;grid-template-columns:1fr;gap:20px}
+    .hero h1{font-size:clamp(28px,4vw,44px);margin:0;line-height:1.02}
+    .lead{color:var(--muted);margin-top:10px}
+    .hero-cta{display:flex;gap:12px;margin-top:18px}
+    .hero-cta button{padding:12px 16px;border-radius:12px;border:none;font-weight:700}
+    .btn-outline{background:white;border:2px solid #eef2ff;color:#0f172a}
+    .hero-art{border-radius:18px;overflow:hidden;box-shadow:var(--shadow)}
+    .hero-art img{display:block;width:100%;height:320px;object-fit:cover}
+
+    /* SECTIONS */
+    section{padding:36px 0}
+    h2{margin:0 0 12px 0}
+    .muted{color:var(--muted)}
+
+    /* cards grid */
+    .grid{display:grid;gap:18px}
+    .cards-3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+    .card{background:var(--card);padding:16px;border-radius:12px;box-shadow:var(--shadow)}
+
+    /* schedule list */
+    .timeline{display:flex;flex-direction:column;gap:12px}
+    .time-item{display:flex;gap:16px;align-items:flex-start}
+    .time-bubble{width:90px;font-weight:700;color:var(--accent)}
+
+    /* speakers */
+    .avatar{width:100%;height:160px;object-fit:cover;border-radius:10px}
+    .speaker-meta{margin-top:10px}
+
+    /* gallery */
+    .gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .gallery img{width:100%;height:160px;object-fit:cover;border-radius:10px}
+
+    /* tickets */
+    .ticket-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+    .price{font-weight:800;font-size:20px}
+    .ticket-choose{margin-top:12px}
+
+    /* sponsors */
+    .sponsors{display:flex;gap:12px;flex-wrap:wrap}
+    .sponsor{padding:12px;background:linear-gradient(180deg,#fff,#f8fafc);border-radius:10px;box-shadow:var(--shadow);font-weight:700}
+
+    /* footer */
+    footer{padding:28px 0;color:var(--muted);font-size:14px}
+
+    /* modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.55);display:flex;align-items:center;justify-content:center;z-index:999}
+    .modal{background:white;padding:18px;border-radius:12px;max-width:520px;width:100%;box-shadow:0 20px 40px rgba(2,6,23,0.3)}
+    .modal h3{margin:0 0 8px}
+    .field{display:flex;flex-direction:column;margin-top:10px}
+    .field input,.field select{padding:10px;border-radius:8px;border:1px solid #e6e9ef}
+    .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+
+    /* small screens */
+    @media(min-width:880px){
+      .hero{grid-template-columns:1fr 460px}
+      .hero-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:720px){nav ul{display:none}.logo{width:48px;height:48px}.container{padding:18px}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="nav">
+      <div class="brand">
+        <div class="logo">CF</div>
+        <div>
+          <div style="font-weight:800">VibranceFest</div>
+          <div style="font-size:12px;color:var(--muted)">College Cultural & Tech Fest</div>
+        </div>
+      </div>
+      <nav>
+        <ul>
+          <li><a href="#events">Events</a></li>
+          <li><a href="#schedule">Schedule</a></li>
+          <li><a href="#speakers">Speakers</a></li>
+          <li><a href="#tickets">Tickets</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="cta" onclick="openTickets('general')">Buy Tickets</button>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <h1>VibranceFest — Where Code Meets Culture</h1>
+          <p class="lead">Three days of music, tech, competitions, art and food. Workshops by industry experts, competitions with cash prizes, and nights that you won't forget.</p>
+          <div class="hero-cta">
+            <button class="cta" onclick="openTickets('general')">Get Tickets</button>
+            <button class="btn-outline" onclick="document.getElementById('schedule').scrollIntoView({behavior:'smooth'})">View Schedule</button>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:16px;color:var(--muted)">
+            <div style="background:var(--card);padding:8px;border-radius:10px;box-shadow:var(--shadow)">📅 Sept 12–14, 2025</div>
+            <div style="background:var(--card);padding:8px;border-radius:10px;box-shadow:var(--shadow)">📍 SRM University Grounds</div>
+          </div>
+        </div>
+        <div class="hero-art">
+          <img src="https://images.unsplash.com/photo-1518600506278-4e8ef466b810?w=1200&q=80" alt="festival">
+        </div>
+      </div>
+    </section>
+
+    <!-- EVENTS -->
+    <section id="events">
+      <h2>Featured Events</h2>
+      <p class="muted">Competitions, workshops and performances — pick your vibe.</p>
+      <div class="grid cards-3" style="margin-top:14px">
+        <article class="card">
+          <div style="font-size:12px;color:var(--muted)">10:00 AM • Main</div>
+          <h3>Opening Ceremony</h3>
+          <p class="muted">Lamp lighting, welcome speech, and fest inauguration.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+            <a href="#schedule" style="color:var(--accent);font-weight:700">View details</a>
+            <button class="btn-outline" onclick="openTickets('free')">Register</button>
+          </div>
+        </article>
+        <article class="card">
+          <div style="font-size:12px;color:var(--muted)">11:30 AM • Auditorium</div>
+          <h3>Battle of Bands</h3>
+          <p class="muted">College bands battle live for the crown.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+            <a href="#schedule" style="color:var(--accent);font-weight:700">View details</a>
+            <button class="btn-outline" onclick="openTickets('general')">Register</button>
+          </div>
+        </article>
+        <article class="card">
+          <div style="font-size:12px;color:var(--muted)">2:00 PM • Labs</div>
+          <h3>Coding Clash</h3>
+          <p class="muted">Quickhack — 90 minute challenge, prizes for top teams.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+            <a href="#schedule" style="color:var(--accent);font-weight:700">View details</a>
+            <button class="btn-outline" onclick="openTickets('general')">Register</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- SCHEDULE -->
+    <section id="schedule">
+      <h2>Schedule</h2>
+      <p class="muted">A tight, jam-packed schedule. Be punctual — prizes don't wait.</p>
+      <div class="timeline" style="margin-top:14px">
+        <div class="time-item card">
+          <div class="time-bubble">10:00 AM</div>
+          <div>
+            <div style="font-weight:700">Opening Ceremony</div>
+            <div class="muted">Lamp lighting & welcome speech • Main Stage</div>
+          </div>
+        </div>
+        <div class="time-item card">
+          <div class="time-bubble">11:30 AM</div>
+          <div>
+            <div style="font-weight:700">Battle of Bands</div>
+            <div class="muted">Live performances • Auditorium</div>
+          </div>
+        </div>
+        <div class="time-item card">
+          <div class="time-bubble">2:00 PM</div>
+          <div>
+            <div style="font-weight:700">Coding Clash</div>
+            <div class="muted">Hack challenge • Computer Lab</div>
+          </div>
+        </div>
+        <div class="time-item card">
+          <div class="time-bubble">7:00 PM</div>
+          <div>
+            <div style="font-weight:700">Headliner Night</div>
+            <div class="muted">Featured artist & DJ set • Main Stage</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SPEAKERS -->
+    <section id="speakers">
+      <h2>Speakers & Artists</h2>
+      <p class="muted">Industry experts, alumni, and performers.</p>
+      <div class="grid cards-3" style="margin-top:14px">
+        <div class="card">
+          <img class="avatar" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=60" alt="speaker">
+          <div class="speaker-meta">
+            <div style="font-weight:800">Dr. Asha Rao</div>
+            <div class="muted">Keynote — The Future of Tech</div>
+            <p class="muted" style="margin-top:8px">AI, ethics, and education. A veteran researcher and educator.</p>
+          </div>
+        </div>
+        <div class="card">
+          <img class="avatar" src="https://images.unsplash.com/photo-1544005311-6f2ecdf0d6a5?w=800&q=60" alt="artist">
+          <div class="speaker-meta">
+            <div style="font-weight:800">Rohit Sharma</div>
+            <div class="muted">Music Headliner</div>
+            <p class="muted" style="margin-top:8px">Indie-pop artist — soulful performances and a live band.</p>
+          </div>
+        </div>
+        <div class="card">
+          <img class="avatar" src="https://images.unsplash.com/photo-1545996124-1e6b1f9b6a4f?w=800&q=60" alt="workshop">
+          <div class="speaker-meta">
+            <div style="font-weight:800">Kapoor Labs</div>
+            <div class="muted">Workshop — Cloud & DevOps</div>
+            <p class="muted" style="margin-top:8px">Hands-on workshop covering CI/CD and cloud basics.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GALLERY -->
+    <section id="gallery">
+      <h2>Gallery</h2>
+      <div class="gallery" style="margin-top:12px">
+        <img src="https://images.unsplash.com/photo-1506806732259-39c2d0268443?w=1000&q=60" alt="g1">
+        <img src="https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1000&q=60" alt="g2">
+        <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=1000&q=60" alt="g3">
+      </div>
+    </section>
+
+    <!-- TICKETS -->
+    <section id="tickets">
+      <h2>Tickets</h2>
+      <p class="muted">Simple pricing. Clear perks. No nonsense.</p>
+      <div class="ticket-grid" style="margin-top:14px">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:800">Student</div>
+              <div class="muted">Free entry for college students (register)</div>
+            </div>
+            <div class="price">Free</div>
+          </div>
+          <div class="ticket-choose">
+            <button class="cta" onclick="openTickets('free')">Choose</button>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:800">General</div>
+              <div class="muted">Access to events + food coupon</div>
+            </div>
+            <div class="price">₹299</div>
+          </div>
+          <div class="ticket-choose">
+            <button class="cta" onclick="openTickets('general')">Choose</button>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:800">VIP</div>
+              <div class="muted">Backstage pass + merch</div>
+            </div>
+            <div class="price">₹999</div>
+          </div>
+          <div class="ticket-choose">
+            <button class="cta" onclick="openTickets('vip')">Choose</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SPONSORS -->
+    <section id="sponsors">
+      <h2> Sponsors </h2>
+      <div class="sponsors" style="margin-top:12px">
+        <div class="sponsor">ACME Corp</div>
+        <div class="sponsor">TechPulse</div>
+        <div class="sponsor">Campus Radio</div>
+        <div class="sponsor">EduLabs</div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact">
+      <h2>Contact & Register</h2>
+      <p class="muted">Questions, volunteer signups, or sponsorship — drop a message.</p>
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:18px;margin-top:12px">
+        <div>
+          <form id="contactForm" onsubmit="handleContact(event)" class="card">
+            <div class="field">
+              <label for="name">Full name</label>
+              <input id="name" required />
+            </div>
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" type="email" required />
+            </div>
+            <div class="field">
+              <label for="message">Message</label>
+              <input id="message" required />
+            </div>
+            <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+              <button class="cta" type="submit">Send</button>
+              <div id="contactNote" style="color:var(--muted);font-size:13px"></div>
+            </div>
+          </form>
+        </div>
+        <div class="card" style="height:100%">
+          <div style="font-weight:800">Bookings</div>
+          <div class="muted" style="margin-top:8px">Registered tickets are saved locally in your browser. You can export them as CSV.</div>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button class="btn-outline" onclick="exportBookings()">Export CSV</button>
+            <button class="btn-outline" onclick="clearBookings()">Clear Bookings</button>
+          </div>
+          <div id="bookingsList" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+        <div>© <span id="year"></span> VibranceFest — Built with ❤️</div>
+        <div class="muted">SRM University • Culture, Tech & Music</div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- TICKET MODAL TEMPLATE -->
+  <div id="modalRoot"></div>
+
+  <script>
+    // Data & utils
+    const TICKETS = {
+      free: { id:'free', name:'Student', price:0 },
+      general: { id:'general', name:'General', price:299 },
+      vip: { id:'vip', name:'VIP', price:999 }
+    };
+
+    const formatCurrency = v => v === 0 ? 'Free' : '₹' + v;
+
+    // Modal management
+    function openTickets(key){
+      const ticket = TICKETS[key] || TICKETS.general;
+      showModal(ticket);
+    }
+
+    function showModal(ticket){
+      const root = document.getElementById('modalRoot');
+      root.innerHTML = `
+        <div class="modal-backdrop" onclick="closeModal(event)">
+          <div class="modal" onclick="event.stopPropagation()">
+            <h3>Book: ${ticket.name} — ${formatCurrency(ticket.price)}</h3>
+            <p class="muted">Fill your details to reserve. (This demo saves locally)</p>
+            <div class="field"><label>Full name</label><input id="bk_name" placeholder="Your name" /></div>
+            <div class="field"><label>Email</label><input id="bk_email" type="email" placeholder="you@college.edu" /></div>
+            <div class="field"><label>College / Dept (optional)</label><input id="bk_college" placeholder="Dept or college" /></div>
+            <div class="modal-actions">
+              <button class="btn-outline" onclick="closeModal()">Cancel</button>
+              <button class="cta" onclick="confirmBooking('${ticket.id}')">Confirm</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function closeModal(e){
+      if(e && e.target && e.target.classList && e.target.classList.contains('modal-backdrop')){
+        document.getElementById('modalRoot').innerHTML = '';
+        return;
+      }
+      document.getElementById('modalRoot').innerHTML = '';
+    }
+
+    // Bookings: localStorage
+    function confirmBooking(ticketId){
+      const name = document.getElementById('bk_name').value.trim();
+      const email = document.getElementById('bk_email').value.trim();
+      const college = document.getElementById('bk_college').value.trim();
+      if(!name || !email){ alert('Please enter name and email'); return; }
+      const ticket = TICKETS[ticketId];
+      const entry = { id: 'bk_' + Date.now(), name, email, college, ticket: ticket.name, price: ticket.price, created: new Date().toISOString() };
+      const arr = JSON.parse(localStorage.getItem('vibrance_bookings') || '[]');
+      arr.push(entry);
+      localStorage.setItem('vibrance_bookings', JSON.stringify(arr));
+      renderBookings();
+      closeModal();
+      alert('Booked! Check Bookings section to export or clear.');
+    }
+
+    function renderBookings(){
+      const list = JSON.parse(localStorage.getItem('vibrance_bookings') || '[]');
+      const el = document.getElementById('bookingsList');
+      if(!el) return;
+      if(list.length === 0){ el.innerHTML = '<div class="muted">No bookings yet.</div>'; return; }
+      el.innerHTML = '<ul style="padding-left:16px;margin:0">' + list.map(b=>`<li style="margin-bottom:6px">${b.name} — ${b.ticket} — ${b.email}</li>`).join('') + '</ul>';
+    }
+
+    function exportBookings(){
+      const list = JSON.parse(localStorage.getItem('vibrance_bookings') || '[]');
+      if(list.length === 0){ alert('No bookings to export'); return; }
+      const csv = ['id,name,email,college,ticket,price,created', ...list.map(b=>[b.id,escapeCsv(b.name),escapeCsv(b.email),escapeCsv(b.college),b.ticket,b.price,b.created].join(','))].join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'vibrance_bookings.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+    function escapeCsv(s){ if(!s) return ''; return '"'+String(s).replace(/"/g,'""')+'"'; }
+    function clearBookings(){ if(!confirm('Clear all bookings from this browser?')) return; localStorage.removeItem('vibrance_bookings'); renderBookings(); }
+
+    // Contact form (local demo)
+    function handleContact(e){ e.preventDefault(); const n=document.getElementById('name').value.trim(); const em=document.getElementById('email').value.trim(); const m=document.getElementById('message').value.trim(); if(!n||!em||!m){ document.getElementById('contactNote').textContent='Please fill all fields'; setTimeout(()=>document.getElementById('contactNote').textContent='',2500); return; } document.getElementById('contactNote').textContent='Message saved locally'; setTimeout(()=>document.getElementById('contactNote').textContent='',2500); document.getElementById('contactForm').reset(); }
+
+    // small helpers
+    document.getElementById('year').textContent = new Date().getFullYear();
+    renderBookings();
+
+    // smooth anchor links for better UX
+    document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click', function(ev){ ev.preventDefault(); const id=this.getAttribute('href').slice(1); const el=document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth'}); }));
+
+    // Accessibility tweak: close modal with ESC
+    window.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') document.getElementById('modalRoot').innerHTML = ''; });
+  </script>
+</body>
+</html>
